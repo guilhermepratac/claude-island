@@ -107,7 +107,8 @@ typealias PermissionFailureHandler = @Sendable (_ sessionId: String, _ toolUseId
 /// Uses GCD DispatchSource for non-blocking I/O
 class HookSocketServer {
     static let shared = HookSocketServer()
-    static let socketPath = "/tmp/claude-island.sock"
+    static let socketPath = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent(".claude/claude-island.sock").path
 
     private var serverSocket: Int32 = -1
     private var acceptSource: DispatchSourceRead?
@@ -174,7 +175,7 @@ class HookSocketServer {
             return
         }
 
-        chmod(Self.socketPath, 0o777)
+        chmod(Self.socketPath, 0o600)
 
         guard listen(serverSocket, 10) == 0 else {
             logger.error("Failed to listen: \(errno)")

@@ -5,12 +5,47 @@
 //  Auto-installs Claude Code hooks on app launch
 //
 
+import AppKit
 import Foundation
 
 struct HookInstaller {
 
-    /// Install hook script and update settings.json on app launch
+    private static let consentKey = "claude_island_hooks_consent_given"
+
+    /// Install hook script and update settings.json on app launch.
+    /// Shows a consent dialog on first run; does nothing if user declined.
     static func installIfNeeded() {
+        let defaults = UserDefaults.standard
+
+        // Already consented previously — just ensure hooks are up to date
+        if defaults.bool(forKey: consentKey) {
+            performInstall()
+            return
+        }
+
+        // First launch: ask the user
+        let alert = NSAlert()
+        alert.messageText = "Enable Claude Code Integration"
+        alert.informativeText = """
+        Claude Island needs to install a hook script into ~/.claude/hooks/ and register it \
+        in ~/.claude/settings.json to track your Claude Code sessions.
+
+        This allows the notch overlay to show session status and permission requests.
+
+        You can enable or disable hooks at any time from the menu.
+        """
+        alert.addButton(withTitle: "Enable Hooks")
+        alert.addButton(withTitle: "Not Now")
+        alert.alertStyle = .informational
+
+        let response = alert.runModal()
+        if response == .alertFirstButtonReturn {
+            defaults.set(true, forKey: consentKey)
+            performInstall()
+        }
+    }
+
+    private static func performInstall() {
         let claudeDir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".claude")
         let hooksDir = claudeDir.appendingPathComponent("hooks")
